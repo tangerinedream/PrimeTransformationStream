@@ -4,7 +4,7 @@ ReqSetSize=1000
 ##
 # Transformations
 #
-MaxK=6
+MaxK=7
 ##
 # Override stdin with a gzipped file
 UseFileInputStream=true
