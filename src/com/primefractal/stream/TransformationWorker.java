@@ -159,23 +159,35 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 
 		try {
 			// Write the rest of the primesIn stream to primesOut so next thread can continue.
-			// There is a case where we may enter the condition of no primes left to send, when we've exhausted the inbound stream
-			if( thisIsLastPluginInChain == false ) {
+			// Also, ensure you read *all* of the inbound primes so that this thread doesn't exit before its predecessor.  
+			//		This can/has happened whereby the last plugin in the array exits because he doesn't need to read & then write the remaining stream of primes.
+//			if( thisIsLastPluginInChain == false ) {
 				nextPrimeIndexStr=getStringFromReader(PRIME_READER_);
 				while( nextPrimeIndexStr.compareTo("") != 0 ) {
 					// Write the read element to Reader of Plugin
-					primesOut.write(nextPrimeIndexStr+NEWLINE_);
+					if( thisIsLastPluginInChain == false ) {
+						primesOut.write(nextPrimeIndexStr+NEWLINE_);
+					}
 					nextPrimeIndexStr=getStringFromReader(PRIME_READER_);
 				}
-			}
+			//}
+//			if( thisIsLastPluginInChain == false ) {
+//				nextPrimeIndexStr=getStringFromReader(PRIME_READER_);
+//				while( nextPrimeIndexStr.compareTo("") != 0 ) {
+//					// Write the read element to Reader of Plugin
+//					primesOut.write(nextPrimeIndexStr+NEWLINE_);
+//					nextPrimeIndexStr=getStringFromReader(PRIME_READER_);
+//				}
+//			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			LOGGER_.severe("Failed to push remaining Ordered Set of Primes (k=1) through pipe.  Fatal error - exiting");
+			LOGGER_.severe("Failed to push remaining Ordered Set of Primes (k=1) through pipe.  Trying to push ->"+nextPrimeIndexStr+"<- I am plugin for set ["+this.getSetK()+"] Fatal error - exiting");
 			System.exit(-1);
 		}
 		if( isThisIsLastPluginInChain() == false )
 			eofWriter(primesOut);
+		
 	}
 	
 	protected void workerClose() {
