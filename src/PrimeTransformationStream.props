@@ -1,5 +1,6 @@
 ##
-ReqSetSize=1000
+#
+FixedElementCountInResultSet=50
 #
 ##
 # Transformations
@@ -15,6 +16,7 @@ UseFileInputStream=true
 FamilyName=TestFamily
 #
 ##
-# Prime Realization
+# No Longer in Use
 #
-MaxPrimesToRealize=0
+#MaxPrimesToRealize=0
+#SizeOfIntegerSet=1000

@@ -14,6 +14,8 @@ import java.io.Writer;
 import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
+import com.primefractal.main.PropertiesHelper;
+
 /**
  * @author GMan
  *
@@ -96,7 +98,8 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 			e1.printStackTrace();
 		}
 		
-
+		long maxElemInResSetRequested=PropertiesHelper.getInstance().getFixedElementCountInResultSet();
+		long highOrderSetCounter=0;  // The number of elems added to the next set
 		long processCounter=0;
 		while( processComplete == false ) {
 			//System.out.println("DEBUG:{"+nextPrimeIndex+", "+nextProcessValueStr+", "+processCounter+"}\n");
@@ -131,15 +134,21 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 				if( nextPrimeIndex == processCounter) {
 					//System.out.println("Writing:{"+nextPrimeIndex+", "+nextProcessValueStr+", "+processCounter+"}\n");
 					resultsFile.write(lowOrderSetElemStr+NEWLINE_);
-					//resultsFile.write(NEWLINE_);
+					highOrderSetCounter++;
 					// Write the read element to Reader of next Thread (e.g. he is a member of the higherOrderSet)
 					if( thisIsLastPluginInChain == false ) {
 						highOrderSet.write(lowOrderSetElemStr+NEWLINE_);
 					}
+					
+					// if maxElemInResSetRequested == 0, we don't cap the output and therefore don't need to check
+					if( (maxElemInResSetRequested != 0L ) && highOrderSetCounter >= maxElemInResSetRequested ) {
+						// There may be more, but the requester has asked that we only capture the first maxElemInResSetRequested in our result files
+						closeResultsFile();
+						// Don't flush the primesOut Writer because he still has plenty of elements to transfer !
+						processComplete=true;
+					}
 				}
-				
-				// Move the chains for the low order set
-				// processCounter++;
+
 				
 			} catch (NumberFormatException e) {
 				e.printStackTrace();

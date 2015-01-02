@@ -36,7 +36,9 @@ final public class PropertiesHelper extends Properties {
 		
 		
 		// Yes this is ugly, which is why it is isolated and centralized to this class.  The readability of the callers of this class is vastly improved.
-		this.setReqSetSize(new Long( (props.getProperty(REQ_SET_SIZE_) == null) ? "100000" : props.getProperty(REQ_SET_SIZE_)).longValue() );
+		
+		// This setting limits the size of each result file, to include only this number of elements.  Zero mean do not limit the elem count
+		this.setFixedElementCountInResultSet(new Long( (props.getProperty(FIXED_ELEM_CNT_IN_RES_SET_) == null) ? "0" : props.getProperty(FIXED_ELEM_CNT_IN_RES_SET_)).longValue() );
 		
 		this.setMaxK(new Integer( (props.getProperty(MAX_K_SETS) == null) ? "5" : props.getProperty(MAX_K_SETS)).intValue() );		
 				
@@ -47,7 +49,11 @@ final public class PropertiesHelper extends Properties {
 		this.setUseFileInputStream(new Boolean( (props.getProperty(USE_FILE_AS_INPUT_STREAM_) == null) ? "false" : props.getProperty(USE_FILE_AS_INPUT_STREAM_)).booleanValue() );
 
 		// The subset of Primes to Realize, as we may not need/want to realize every one from a set.
-		this.setMaxPrimesToRealize(new Long( (props.getProperty(MAX_PRIMES_TO_REALIZE_) == null) ? "0" : props.getProperty(MAX_PRIMES_TO_REALIZE_)).longValue() );
+		//this.setMaxPrimesToRealize(new Long( (props.getProperty(MAX_PRIMES_TO_REALIZE_) == null) ? "0" : props.getProperty(MAX_PRIMES_TO_REALIZE_)).longValue() );
+		
+		// To be read in as command line argument for better scripting integration
+//		this.setSizeOfIntegerSet(new Long( (props.getProperty(SIZE_OF_INTEGER_SET_) == null) ? "100000" : props.getProperty(SIZE_OF_INTEGER_SET_)).longValue() );
+
 	}
 	
 	
@@ -61,22 +67,32 @@ final public class PropertiesHelper extends Properties {
 		this.useFileInputStream = useFileInputStream;
 	}
 
-	public long getReqSetSize() {
-		return (reqSetSize);
+	public long getSizeOfIntegerSet() {
+		return (sizeOfIntegerSet);
 	}
 
 
 
-	protected void setReqSetSize(long reqSetSize) {
-		this.reqSetSize = reqSetSize;
+	public void setSizeOfIntegerSet(long size) {
+		this.sizeOfIntegerSet = size;
+	}
+	
+	
+
+
+	public long getFixedElementCountInResultSet() {
+		return (FixedElementCountInResultSet);
 	}
 
+	protected void setFixedElementCountInResultSet(long fixedElementCountInResultSet) {
+		FixedElementCountInResultSet = fixedElementCountInResultSet;
+	}
 
 	public int getMaxK() {
 		return (maxK);
 	}
 
-	public void setMaxK(int maxK) {
+	protected void setMaxK(int maxK) {
 		this.maxK = maxK;
 	}
 
@@ -84,31 +100,33 @@ final public class PropertiesHelper extends Properties {
 		return (familyName);
 	}
 	
-	public void setFamilyName(String familyName) {
+	protected void setFamilyName(String familyName) {
 		this.familyName = familyName;
 	}
 
-	public long getMaxPrimesToRealize() {
-		return (maxPrimesToRealize);
-	}
+//	public long getMaxPrimesToRealize() {
+//		return (maxPrimesToRealize);
+//	}
 
-	public void setMaxPrimesToRealize(long maxPrimesToRealize) {
-		this.maxPrimesToRealize = maxPrimesToRealize;
-	}
+//	protected void setMaxPrimesToRealize(long maxPrimesToRealize) {
+//		this.maxPrimesToRealize = maxPrimesToRealize;
+//	}
 	
 
 	private final static Properties props = new Properties();
 	
-	private long  	reqSetSize;
+	private long  	sizeOfIntegerSet;
+	private long	FixedElementCountInResultSet;
 	private int  	maxK;
 	private boolean useFileInputStream;
 	private String  familyName;
-	private long	maxPrimesToRealize;
+	//private long	maxPrimesToRealize;
 	
-	final private static String REQ_SET_SIZE_="ReqSetSize";
+	//final private static String SIZE_OF_INTEGER_SET_="SizeOfIntegerSet";  // read in as args command line param, not Props file, but still managed by this class
+	final private static String FIXED_ELEM_CNT_IN_RES_SET_="FixedElementCountInResultSet";
 	final private static String MAX_K_SETS="MaxK";	
 	final private static String FAMILY_NAME_="FamilyName";
-	final private static String MAX_PRIMES_TO_REALIZE_="MaxPrimesToRealize";
+	//final private static String MAX_PRIMES_TO_REALIZE_="MaxPrimesToRealize";
 	final private static String USE_FILE_AS_INPUT_STREAM_="UseFileInputStream";
 	
 	public final static String FILE_DELIM_=".";
