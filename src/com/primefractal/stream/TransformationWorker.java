@@ -35,11 +35,10 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 		
 		// If nextPluginInChain is null, it means this instance plugin is last, and we don't need to use any PipedWriters at all
 		if( nextPluginInChain == null ) {
-			thisIsLastPluginInChain = true;
 			// These are unused
 			setPrimesOut(null);
 			setHighOrderSet(null);
-			return;
+			return; 
 		}
 		
 		try {
@@ -91,7 +90,7 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 			nextPrimeIndex=new Long(nextPrimeIndexStr).longValue();	
 			// Write the read element to Reader of Plugin, unless we are the last Plugin.
 			if( thisIsLastPluginInChain == false )
-				primesOut.write(nextPrimeIndexStr);
+				primesOut.write(nextPrimeIndexStr+NEWLINE_);
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -124,18 +123,18 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 					nextPrimeIndex=new Long(nextPrimeIndexStr).longValue();
 					// Write the read element to Reader of Plugin, unless we are the last Plugin.
 					if( thisIsLastPluginInChain == false )
-						primesOut.write(nextPrimeIndexStr);
+						primesOut.write(nextPrimeIndexStr+NEWLINE_);
 				}
 				
 				// When the index (e.g. counter) of the Low Order Set equals a Prime number, we have a Prime Index.
 				//   and therefore, the element is a member of the next (higher order) set.
 				if( nextPrimeIndex == processCounter) {
 					//System.out.println("Writing:{"+nextPrimeIndex+", "+nextProcessValueStr+", "+processCounter+"}\n");
-					resultsFile.write(lowOrderSetElemStr);
-					resultsFile.write(NEWLINE_);
+					resultsFile.write(lowOrderSetElemStr+NEWLINE_);
+					//resultsFile.write(NEWLINE_);
 					// Write the read element to Reader of next Thread (e.g. he is a member of the higherOrderSet)
 					if( thisIsLastPluginInChain == false ) {
-						highOrderSet.write(lowOrderSetElemStr);
+						highOrderSet.write(lowOrderSetElemStr+NEWLINE_);
 					}
 				}
 				
@@ -150,12 +149,13 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 		} // while
 
 		try {
-			// Write the rest of the primesIn stream to primesOut so next thread can continue, unless we are the last Plugin in the chain
+			// Write the rest of the primesIn stream to primesOut so next thread can continue.
+			// There is a case where we may enter the condition of no primes left to send, when we've exhausted the inbound stream
 			if( thisIsLastPluginInChain == false ) {
 				nextPrimeIndexStr=getStringFromReader(PRIME_READER_);
 				while( nextPrimeIndexStr.compareTo("") != 0 ) {
 					// Write the read element to Reader of Plugin
-					primesOut.write(nextPrimeIndexStr);
+					primesOut.write(nextPrimeIndexStr+NEWLINE_);
 					nextPrimeIndexStr=getStringFromReader(PRIME_READER_);
 				}
 			}
@@ -237,13 +237,13 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 			int value;
 			if(fromReader == PRIME_READER_) {
 				value=primes.read();
-				while ( ((char)value != castedNewlineChar) && (value != EOF_) ) {
+				while ( ((char)value != castedNewlineChar) && ((char)value != (char)EOF_) ) {
 					sb.append((char)value);
 					value=primes.read();
 				}	
 			} else {
 				value=lowerOrderSet.read();
-				while ( ((char)value != castedNewlineChar) && (value != EOF_) ) {
+				while ( ((char)value != castedNewlineChar) && ((char)value != (char)EOF_) ) {
 					sb.append((char)value);
 					value=lowerOrderSet.read();
 				}

@@ -15,6 +15,8 @@ import java.io.PipedWriter;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 
 import com.primefractal.stream.ITransformationPlugin;
@@ -54,14 +56,13 @@ public class Driver {
 				// Special case - no plugin ahead of him to wire him up.  We will do it manually.
 				currPlugin.setPrimes(readerForFirstPlugin);
 				currPlugin.setLowerOrderSet(lowerOrderSetForPlugin);
-				continue;
 			}
 
 			if( currPlugin.isThisIsLastPluginInChain() == true ) {
 				// Last element in the list - special case
 				currPlugin.wireUp(null);
 			} else {
-				currPlugin.wireUp(plugins.get(i=1));
+				currPlugin.wireUp(plugins.get(i+1));
 			}
 		}
 		
@@ -135,6 +136,8 @@ public class Driver {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		LOGGER_.setLevel(Level.INFO);
+		
 		// TODO Auto-generated method stub
 		Driver driver=new Driver();
 		PropertiesHelper props=PropertiesHelper.getInstance();
@@ -151,6 +154,8 @@ public class Driver {
 
 		// Make and wire up the Workers
 		ArrayList<ITransformationPlugin> plugins=driver.makeTransformationWorkers(props, primesReaderForFirstPlugin, lowerOrderSetReaderForFirstPlugin);
+		
+		LOGGER_.info("TODO: Implement max result set size");
 
 		//Launch Threads...
 		for( int i=0; i < plugins.size(); i++ ) {
@@ -180,4 +185,6 @@ public class Driver {
 
 	private static final String SET_1_FILENAME_PREFIX_="Set.1.";
 	private final static int		EOF_=-1;
+	
+	final private static Logger LOGGER_=Logger.getLogger("PrimeTransformationStream");  // project wide logger
 }
