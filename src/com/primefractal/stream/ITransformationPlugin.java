@@ -23,6 +23,7 @@ public interface ITransformationPlugin {
 	public abstract void setHighOrderSet(PipedWriter highOrderSet);
 
 	public abstract void setSetK(int setK);
+	public int getSetK();
 
 	public abstract void setReqSetSize(long reqSetSize);
 	
@@ -30,7 +31,7 @@ public interface ITransformationPlugin {
 	
 	public abstract boolean isThisIsLastPluginInChain();
 	
-	public final static int		PRIMES_PIPE_BUF_SIZE_=1000000;		// 10^6
-	public final static int		HIGH_ORDER_PIPE_BUF_SIZE_=10000000;  // 10^6
+	public final static int		PRIMES_PIPE_BUF_SIZE_		=1000000;	// 10^6
+	public final static int		HIGH_ORDER_PIPE_BUF_SIZE_	=1000000;	// 10^6
 
 }

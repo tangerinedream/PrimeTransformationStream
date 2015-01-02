@@ -253,9 +253,9 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 	protected String getStringFromReader(boolean fromReader) {
 		StringBuffer sb=new StringBuffer();
 		int	castedNewlineChar=(int)NEWLINE_CHAR_;
-		
+		int value=0;		
 		try {
-			int value;
+
 			if(fromReader == PRIME_READER_) {
 				value=primes.read();
 				while ( ((char)value != castedNewlineChar) && ((char)value != (char)EOF_) ) {
@@ -273,7 +273,10 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			//This is actually ok and handled gracefully with the return of an empty string.
-			//e.printStackTrace();
+			System.err.println("Note: this may not affect results");
+			System.err.println("Error: Current thread was "+Thread.currentThread().getName()+" offending char was "+value);
+			e.printStackTrace();
+			
 		}
 		return sb.toString();
 	}

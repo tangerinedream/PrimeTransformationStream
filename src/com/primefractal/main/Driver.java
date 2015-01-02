@@ -171,7 +171,9 @@ public class Driver {
 
 		//Launch Threads...
 		for( int i=0; i < plugins.size(); i++ ) {
-			Thread t=new Thread((Runnable) plugins.get(i));
+			ITransformationPlugin currPlugin=plugins.get(i);
+			Thread t=new Thread((Runnable) currPlugin);
+			t.setName("K="+new Integer(currPlugin.getSetK()).toString());
 			t.start();
 		}
 

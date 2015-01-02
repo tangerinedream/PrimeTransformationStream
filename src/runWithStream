@@ -1,0 +1,4 @@
+#!/bin/bash
+
+export SetOfIntegerSize=$1
+primesieve "${SetOfIntegerSize}" --print | java com.primefractal.main.Driver "${SetOfIntegerSize}"
