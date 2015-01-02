@@ -1,0 +1,20 @@
+##
+ReqSetSize=1000
+#
+##
+# Transformations
+#
+MaxK=2
+##
+# Override stdin with a gzipped file
+UseFileInputStream=true
+#
+##
+# File Naming
+#
+FamilyName=TestFamily
+#
+##
+# Prime Realization
+#
+MaxPrimesToRealize=0
