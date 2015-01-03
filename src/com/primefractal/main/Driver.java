@@ -148,6 +148,7 @@ public class Driver {
 		for( int i=0; i < plugins.size(); i++ ) {
 			ITransformationPlugin currPlugin=plugins.get(i);
 			Thread t=new Thread((Runnable) currPlugin);
+			//t.setPriority(Thread.NORM_PRIORITY+1);
 			t.setName("K="+new Integer(currPlugin.getSetK()).toString());
 			t.start();
 		}
@@ -172,9 +173,15 @@ public class Driver {
 		Long nextPrimeRead=getNextPrime();
 		
 		// When EOF is encountered on the input stream, getNextPrime() will catch that and return EOF_FOR_QUEUE_ instead
-		while(nextPrimeRead != PropertiesHelper.EOF_FOR_QUEUE_) {			
+		while(nextPrimeRead != PropertiesHelper.EOF_FOR_QUEUE_) {
+			BlockingQueue<Long> copyPrimesQ=primesQueue;
+			BlockingQueue<Long> copyOutboundQ=lowerOrderQueue;
+			
+			// For some reason, the value isn't getting copied into the queue
+			Long nextPrimeReadCopy=new Long(nextPrimeRead);
+			putToOutboundProcessedSetQ(nextPrimeReadCopy);
 			putToPrimesOutQ(nextPrimeRead);
-			putToOutboundProcessedSetQ(nextPrimeRead);
+			Thread.yield();
 			nextPrimeRead=getNextPrime();
 		}
 		

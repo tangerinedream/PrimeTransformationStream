@@ -124,9 +124,11 @@ final public class PropertiesHelper extends Properties {
 	
 	
 	public final static int		PRIMES_Q_BUF_SIZE_	=1000000;	// 10^6
+	//public final static int		PRIMES_Q_BUF_SIZE_	=10000000;	// 10^7
+	//public final static int		PRIMES_Q_BUF_SIZE_	=3000000;	// 3M
 	public final static int		HIGH_Q_BUF_SIZE_	=1000000;	// 10^6
-	public final static int		Q_OFFER_SLEEP_DURATION_ = 50; // millis
-	public final static int		Q_POLL_SLEEP_DURATION_ 	= 50; // millis
+	public final static long		Q_OFFER_SLEEP_DURATION_ = 50L; // millis
+	public final static long		Q_POLL_SLEEP_DURATION_ 	= 50L; // millis
 	public final static Long 	EOF_FOR_QUEUE_=new Long(-1);
 	
 	final private static Logger LOGGER_=Logger.getLogger("PrimeTransformationStream");  // project wide logger

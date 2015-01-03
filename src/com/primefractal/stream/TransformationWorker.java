@@ -60,10 +60,13 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 		boolean processComplete=false;
 		Long lowOrderSetElemLong=null;
 		Long nextPrimeIndexLong=null;
+		//long debugCntPrimesRead=0;
+		//long debugCntInSetElemRead=0;
 		
 
 		// Read first Prime from Prime Reader
 		nextPrimeIndexLong=getFromPrimesInQ();
+		//debugCntPrimesRead++;
 		if( nextPrimeIndexLong == PropertiesHelper.EOF_FOR_QUEUE_ ) {
 			// This should never occur.  End of file encountered on first element of the Ordered Set of Primes.
 			if( thisIsLastPluginInChain == false ) {
@@ -85,9 +88,12 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 		long processCounter=0;
 		while( processComplete == false ) {
 			//System.out.println("DEBUG:{"+nextPrimeIndex+", "+nextProcessValueStr+", "+processCounter+"}\n");
-
+			
 			// Read next value from low order set (the set to be transformed)
 			lowOrderSetElemLong=getFromInboundSetToProcessQ();
+//			debugCntInSetElemRead++;
+//			System.out.println("DEBUG: NbrPrimesRead="+debugCntPrimesRead+" Nbr InSetElemsRead="+debugCntInSetElemRead);
+//			System.out.println("DEBUG: PrimesQ Capacity="+primesInQ.remainingCapacity()+" SetInQ capacity="+inboundSetToProcessQ.remainingCapacity());
 			if( lowOrderSetElemLong == PropertiesHelper.EOF_FOR_QUEUE_ ) {
 				// Let the consumer of the stream know the end of file has been reached
 				if( thisIsLastPluginInChain == false ) {
@@ -104,6 +110,7 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 			// Ensure the next Prime Index is > processCounter.  Must use < and not <= otherwise search for index beyond stream
 			while( nextPrimeIndexLong.longValue() < processCounter) {
 				nextPrimeIndexLong=getFromPrimesInQ();
+				//debugCntPrimesRead++;
 				// Write the read element to Reader of Plugin, unless we are the last Plugin.
 				if( thisIsLastPluginInChain == false )
 					putToPrimesOutQ(nextPrimeIndexLong);
@@ -136,7 +143,7 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 			}
 
 		} // while
-
+		//LOGGER_.info("Worker K=["+getSetK()+"] completed, processing ["+processCounter+"] elements in inboundSetToProcessQ");
 
 		if( isThisIsLastPluginInChain() == true ) {
 			// Nothing to do - we're done

@@ -5,7 +5,7 @@ FixedElementCountInResultSet=0
 ##
 # Transformations
 #
-MaxK=8
+MaxK=2
 ##
 # Override stdin with a gzipped file
 UseFileInputStream=true
