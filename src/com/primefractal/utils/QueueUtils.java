@@ -4,7 +4,6 @@
 package com.primefractal.utils;
 
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import com.primefractal.main.PropertiesHelper;
 

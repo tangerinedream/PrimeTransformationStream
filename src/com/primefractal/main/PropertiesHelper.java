@@ -50,9 +50,6 @@ final public class PropertiesHelper extends Properties {
 		// Instead of using Stdin for stream of primes for Set K=1, use this GZip'd file instead
 		this.setUseFileInputStream(new Boolean( (props.getProperty(USE_FILE_AS_INPUT_STREAM_) == null) ? "false" : props.getProperty(USE_FILE_AS_INPUT_STREAM_)).booleanValue() );
 
-		// The subset of Primes to Realize, as we may not need/want to realize every one from a set.
-		//this.setMaxPrimesToRealize(new Long( (props.getProperty(MAX_PRIMES_TO_REALIZE_) == null) ? "0" : props.getProperty(MAX_PRIMES_TO_REALIZE_)).longValue() );
-		
 		// To be read in as command line argument for better scripting integration
 //		this.setSizeOfIntegerSet(new Long( (props.getProperty(SIZE_OF_INTEGER_SET_) == null) ? "100000" : props.getProperty(SIZE_OF_INTEGER_SET_)).longValue() );
 
@@ -106,13 +103,6 @@ final public class PropertiesHelper extends Properties {
 		this.familyName = familyName;
 	}
 
-//	public long getMaxPrimesToRealize() {
-//		return (maxPrimesToRealize);
-//	}
-
-//	protected void setMaxPrimesToRealize(long maxPrimesToRealize) {
-//		this.maxPrimesToRealize = maxPrimesToRealize;
-//	}
 	
 
 	private final static Properties props = new Properties();
@@ -122,13 +112,12 @@ final public class PropertiesHelper extends Properties {
 	private int  	maxK;
 	private boolean useFileInputStream;
 	private String  familyName;
-	//private long	maxPrimesToRealize;
+
 	
 	//final private static String SIZE_OF_INTEGER_SET_="SizeOfIntegerSet";  // read in as args command line param, not Props file, but still managed by this class
 	final private static String FIXED_ELEM_CNT_IN_RES_SET_="FixedElementCountInResultSet";
 	final private static String MAX_K_SETS="MaxK";	
 	final private static String FAMILY_NAME_="FamilyName";
-	//final private static String MAX_PRIMES_TO_REALIZE_="MaxPrimesToRealize";
 	final private static String USE_FILE_AS_INPUT_STREAM_="UseFileInputStream";
 	
 	public final static String FILE_DELIM_=".";
@@ -138,7 +127,6 @@ final public class PropertiesHelper extends Properties {
 	public final static int		HIGH_Q_BUF_SIZE_	=1000000;	// 10^6
 	public final static int		Q_OFFER_SLEEP_DURATION_ = 50; // millis
 	public final static int		Q_POLL_SLEEP_DURATION_ 	= 50; // millis
-	//public final static long	POLL_DURATION_			=10;  // millis
 	public final static Long 	EOF_FOR_QUEUE_=new Long(-1);
 	
 	final private static Logger LOGGER_=Logger.getLogger("PrimeTransformationStream");  // project wide logger

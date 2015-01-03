@@ -8,12 +8,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.PipedReader;
-import java.io.PipedWriter;
-import java.io.Writer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
@@ -33,11 +29,7 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 		makeOutFile();
 	}
 	
-	public void wireUp( /* PipedReader primes, PipedReader setToTransform, */ ITransformationPlugin nextPluginInChain /* PipedWriter primesOut, PipedWriter higherOrderSet */) {
-		// This instances Readers were set by its Predecessor in the chain, so nothing to do here.
-		
-		// For output pipes, this class creates both the buffer and the Pipes (both sides) and hands to the next plugin in the chain.
-		// So, we need to do some work here
+	public void wireUp(ITransformationPlugin nextPluginInChain) {
 		
 		// If nextPluginInChain is null, it means this instance plugin is last, and we don't need to use any outward facing queues at all
 		if( nextPluginInChain == null ) {
@@ -47,38 +39,16 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 			return; 
 		}
 		
-//		try {
-			// Make the Primes Output Q
-			primesOutQ=new ArrayBlockingQueue<Long>(PropertiesHelper.PRIMES_Q_BUF_SIZE_);
-			// share it with the next plugin
-			nextPluginInChain.setPrimesInQ(primesOutQ);
-			
-			// Make the Higher Order Set Queue
-			outboundProcessedSetQ=new ArrayBlockingQueue<Long>(PropertiesHelper.HIGH_Q_BUF_SIZE_);
-			// Share it with next plugin
-			nextPluginInChain.setInboundSetToProcessQ(outboundProcessedSetQ);
-			
-//			
-//			
-//			// Make the PrimesOut Writer for us and the associated Reader for Delegate
-//			PipedReader primesOutPipeReader=new PipedReader(PRIMES_PIPE_BUF_SIZE_);
-//			nextPluginInChain.setPrimes(primesOutPipeReader);
-//			// Now, wrap the Reader with the Writer, which is what this instance needs
-//			PipedWriter primesOutPipeWriter = new PipedWriter(primesOutPipeReader);
-//			this.setPrimesInQ(primesOutPipeWriter);
-//			
-//			
-//			// Make the PrimesOut Writer for us and the associated Reader for Delegate
-//			PipedReader highOrderPipeReader=new PipedReader(HIGH_ORDER_PIPE_BUF_SIZE_);
-//			nextPluginInChain.setLowerOrderSet(highOrderPipeReader);
-//			// Now, wrap the Reader with the Writer, which is what this instance needs
-//			PipedWriter highOrderPipeWriter = new PipedWriter(highOrderPipeReader);
-//			this.setHighOrderSet(highOrderPipeWriter);			
-//			
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+
+		// Make the Primes Output Q
+		primesOutQ=new ArrayBlockingQueue<Long>(PropertiesHelper.PRIMES_Q_BUF_SIZE_);
+		// share it with the next plugin
+		nextPluginInChain.setPrimesInQ(primesOutQ);
+		
+		// Make the Higher Order Set Queue
+		outboundProcessedSetQ=new ArrayBlockingQueue<Long>(PropertiesHelper.HIGH_Q_BUF_SIZE_);
+		// Share it with next plugin
+		nextPluginInChain.setInboundSetToProcessQ(outboundProcessedSetQ);
 	}
 	
 
@@ -89,7 +59,6 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 	public void run() {
 		boolean processComplete=false;
 		Long lowOrderSetElemLong=null;
-		//long nextPrimeIndex=0L;
 		Long nextPrimeIndexLong=null;
 		
 
@@ -104,7 +73,7 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 			closeResultsFile();
 			return;
 		}
-		//nextPrimeIndex=new Long(nextPrimeIndexLong).longValue();	
+
 		// Write the read element to Reader of Plugin, unless we are the last Plugin.
 		if( thisIsLastPluginInChain == false )
 			putToPrimesOutQ(nextPrimeIndexLong);
@@ -131,11 +100,10 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 			}
 			processCounter++;
 			
-			// Ensure the nextPrimeIndex to check, is >= processCounter
-			// Ensure the next Prime Index is > current counter.  Must use < and not <= otherwise search for index beyond stream
+
+			// Ensure the next Prime Index is > processCounter.  Must use < and not <= otherwise search for index beyond stream
 			while( nextPrimeIndexLong.longValue() < processCounter) {
 				nextPrimeIndexLong=getFromPrimesInQ();
-				//nextPrimeIndex=new Long(nextPrimeIndexLong).longValue();
 				// Write the read element to Reader of Plugin, unless we are the last Plugin.
 				if( thisIsLastPluginInChain == false )
 					putToPrimesOutQ(nextPrimeIndexLong);
@@ -149,7 +117,6 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 					String strToWrite=new String(lowOrderSetElemLong.toString() + NEWLINE_);
 					resultsFile.write(strToWrite);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				highOrderSetCounter++;
@@ -182,34 +149,8 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 			}
 			putToPrimesOutQ(PropertiesHelper.EOF_FOR_QUEUE_);
 		}
-//		nextPrimeIndexLong=getFromPrimesInQ();
-//		while( nextPrimeIndexLong != PropertiesHelper.EOF_FOR_QUEUE_ ) {
-//			// Write the read element to Reader of Plugin
-//			if( thisIsLastPluginInChain == false ) {
-//				putToPrimesOutQ(nextPrimeIndexLong);
-//			}
-//			nextPrimeIndexLong=getFromPrimesInQ();
-//		}
-//
-//		if( isThisIsLastPluginInChain() == false )
-//			putToPrimesOutQ(PropertiesHelper.EOF_FOR_QUEUE_);
-		
 	}
-	
-//	protected void workerClose() {
-//		// Close our end of the Pipes
-//		try {
-//			primes.close();
-//			primesOut.close();
-//			lowerOrderSet.close();
-//			highOrderSet.close();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		// Close our output file
-//	}
-	
+		
 	@Override
 	public void setPrimesInQ(BlockingQueue<Long> primesQ) {
 		// TODO Auto-generated method stub
@@ -276,25 +217,6 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 	protected Long getFromInboundSetToProcessQ() {
 		return( QueueUtils.getLongFromQueue(inboundSetToProcessQ) );
 	}
-//	private Long getLongFromQueue(BlockingQueue<Long> queue) {
-//		Long nextValue=null;
-//		boolean done=false;
-//		
-//		while( done == false ) {
-//			boolean pollResult=false;
-//			try {
-//				while(pollResult == false) {
-//					nextValue=queue.poll(PropertiesHelper.POLL_DURATION_, TimeUnit.MILLISECONDS);
-//					Thread.sleep(PropertiesHelper.Q_POLL_SLEEP_DURATION_);
-//				}
-//				done=true;
-//			} catch (InterruptedException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//		}
-//		return(nextValue);
-//	}
 	
 	// WRITING TO QUEUES
 	protected void putToPrimesOutQ(Long valueToPut) {
@@ -303,57 +225,6 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 	protected void putToOutboundProcessedSetQ(Long valueToPut) {
 		QueueUtils.putLongToQueue(outboundProcessedSetQ, valueToPut);
 	}
-//	private void putLongToQueue(BlockingQueue<Long> queue, Long valueToPut) {
-//		boolean done=false;
-//		
-//		while( done == false ) {
-//			boolean offerResult=false;
-//			try {
-//				offerResult=queue.offer(valueToPut);
-//				while(offerResult == false) {
-//					Thread.sleep(PropertiesHelper.Q_OFFER_SLEEP_DURATION_);
-//					offerResult=queue.offer(valueToPut);
-//				}
-//				done=true;
-//			} catch (InterruptedException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//		}
-			
-//	}
-		
-		
-////		StringBuffer sb=new StringBuffer();
-////		int	castedNewlineChar=(int)NEWLINE_CHAR_;
-////		int value=0;		
-////		try {
-////
-////			if(fromReader == PRIME_READER_) {
-////				value=primes.read();
-////				while ( ((char)value != castedNewlineChar) && ((char)value != (char)EOF_) ) {
-////					sb.append((char)value);
-////					value=primes.read();
-////				}	
-////			} else {
-////				value=lowerOrderSet.read();
-////				while ( ((char)value != castedNewlineChar) && ((char)value != (char)EOF_) ) {
-////					sb.append((char)value);
-////					value=lowerOrderSet.read();
-////				}
-////			}
-//			
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			//This is actually ok and handled gracefully with the return of an empty string.
-//			System.err.println("Note: this may not affect results");
-//			System.err.println("Error: Current thread was "+Thread.currentThread().getName()+" offending char was "+value);
-//			e.printStackTrace();
-//			
-//		}
-//		return sb.toString();
-//	}
-
 
 	@Override
 	public void setSetK(int setK) {
@@ -372,9 +243,6 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 	public long getReqSetSize() {
 		return (reqSetSize);
 	}
-	
-
-
 
 	@Override
 	public void setThisIsLastPluginInChain(boolean flag) {
@@ -388,12 +256,6 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 	}
 
 
-
-
-//	protected 	PipedReader 			primes;
-//	protected 	PipedWriter				primesOut;
-//	protected 	PipedReader 			lowerOrderSet;
-//	protected	PipedWriter				highOrderSet;
 	
 	protected	BlockingQueue<Long>		primesInQ;
 	protected	BlockingQueue<Long>		primesOutQ;
@@ -411,31 +273,7 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 	
 	private final static String 	SET_PREFIX_="Set";
 	private final static String 	NEWLINE_="\n";
-	private final static char   	NEWLINE_CHAR_='\n';
 	private final static String 	DELIM_=".";
-	private final static int		EOF_=-1;
-	private final static boolean 	PRIME_READER_=true;
-	private final static boolean 	LOW_ORDER_SET_READER_=false;
-	
 	
 	final private static Logger LOGGER_=Logger.getLogger("PrimeTransformationStream");  // project wide logger
-
-
-//	/* 
-//	 * @see com.primefractal.stream.ITransformationPlugin#setLowerOrderQueue(java.util.concurrent.BlockingQueue)
-//	 */
-//	@Override
-//	public void setLowerOrderQueue(BlockingQueue<Long> lowerOrderQ) {
-//		// TODO Auto-generated method stub
-//		
-//	}
-
-//	/* 
-//	 * @see com.primefractal.stream.ITransformationPlugin#setHighOrderSet(java.io.PipedWriter)
-//	 */
-//	@Override
-//	public void setHighOrderSet(PipedWriter highOrderSet) {
-//		// TODO Auto-generated method stub
-//		
-//	}
 }

@@ -20,27 +20,11 @@ public interface ITransformationPlugin {
 	public abstract void setInboundSetToProcessQ(BlockingQueue<Long> lowerOrderQ);
 	public abstract void setOutboundProcessedSetQ(BlockingQueue<Long> higherOrderQ);
 
-	//public abstract void setPrimesOut(PipedWriter primesOut);
-
-	//public abstract void setLowerOrderQueue(BlockingQueue<Long> lowerOrderQ);
-
-	//public abstract void setHighOrderSet(PipedWriter highOrderSet);
 
 	public abstract void setSetK(int setK);
 	public int getSetK();
 
-	public abstract void setReqSetSize(long reqSetSize);
-	
-	public abstract void setThisIsLastPluginInChain(boolean flag);
-	
+	public abstract void setReqSetSize(long reqSetSize);	
+	public abstract void setThisIsLastPluginInChain(boolean flag);	
 	public abstract boolean isThisIsLastPluginInChain();
-	
-//	public final static int		PRIMES_PIPE_BUF_SIZE_		=1000000;	// 10^6
-//	public final static int		HIGH_ORDER_PIPE_BUF_SIZE_	=1000000;	// 10^6
-	
-//	public final static int		PRIMES_Q_BUF_SIZE_	=1000000;	// 10^6
-//	public final static int		HIGH_Q_BUF_SIZE_	=1000000;	// 10^6
-	
-
-
 }
