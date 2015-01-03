@@ -15,6 +15,8 @@ final public class PropertiesHelper extends Properties {
 
 
 	private static PropertiesHelper instance = null;
+
+
 	
     synchronized public static PropertiesHelper getInstance() {
         if(instance == null) {
@@ -130,6 +132,14 @@ final public class PropertiesHelper extends Properties {
 	final private static String USE_FILE_AS_INPUT_STREAM_="UseFileInputStream";
 	
 	public final static String FILE_DELIM_=".";
+	
+	
+	public final static int		PRIMES_Q_BUF_SIZE_	=1000000;	// 10^6
+	public final static int		HIGH_Q_BUF_SIZE_	=1000000;	// 10^6
+	public final static int		Q_OFFER_SLEEP_DURATION_ = 50; // millis
+	public final static int		Q_POLL_SLEEP_DURATION_ 	= 50; // millis
+	//public final static long	POLL_DURATION_			=10;  // millis
+	public final static Long 	EOF_FOR_QUEUE_=new Long(-1);
 	
 	final private static Logger LOGGER_=Logger.getLogger("PrimeTransformationStream");  // project wide logger
 	

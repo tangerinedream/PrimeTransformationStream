@@ -15,12 +15,15 @@ import java.io.PipedWriter;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 
 import com.primefractal.stream.ITransformationPlugin;
 import com.primefractal.stream.TransformationWorker;
+import com.primefractal.utils.QueueUtils;
 
 /**
  * @author GMan
@@ -28,7 +31,7 @@ import com.primefractal.stream.TransformationWorker;
  */
 public class Driver {
 
-	protected ArrayList<ITransformationPlugin> makeTransformationWorkers(PropertiesHelper props, PipedReader readerForFirstPlugin, PipedReader lowerOrderSetForPlugin) {
+	protected ArrayList<ITransformationPlugin> makeTransformationWorkers(PropertiesHelper props, BlockingQueue<Long> primesQ, BlockingQueue<Long> lowerOrderQ) {
 		// Get the number of transformations or K  
 		
 		
@@ -54,8 +57,8 @@ public class Driver {
 			
 			if( i == 0 ) {
 				// Special case - no plugin ahead of him to wire him up.  We will do it manually.
-				currPlugin.setPrimes(readerForFirstPlugin);
-				currPlugin.setLowerOrderSet(lowerOrderSetForPlugin);
+				currPlugin.setPrimesInQ(primesQ);
+				currPlugin.setInboundSetToProcessQ(lowerOrderQ);
 			}
 
 			if( currPlugin.isThisIsLastPluginInChain() == true ) {
@@ -99,46 +102,42 @@ public class Driver {
 		return(stdinReader);
 	}
 	
-	protected PipedReader makePrimesPipeForFirstPlugin(PropertiesHelper props) {
-		
-		PipedReader primesReader=null;
-		try {
-			// Create the PipedReaders for the first Plugin.  The rest of the plugins set manufacture using Chain of Responsibility pattern
-			primesReader=new PipedReader(ITransformationPlugin.PRIMES_PIPE_BUF_SIZE_);
-			// The end of the point that primes will be written so the first plugin can read them
-			primesMainEndpointWriter=new PipedWriter(primesReader);
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return(primesReader);
-	}
+//	protected PipedReader makePrimesPipeForFirstPlugin(PropertiesHelper props) {
+//		
+//		PipedReader primesReader=null;
+//		try {
+//			// Create the PipedReaders for the first Plugin.  The rest of the plugins set manufacture using Chain of Responsibility pattern
+//			primesReader=new PipedReader(ITransformationPlugin.PRIMES_PIPE_BUF_SIZE_);
+//			// The end of the point that primes will be written so the first plugin can read them
+//			primesMainEndpointWriter=new PipedWriter(primesReader);
+//			
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		return(primesReader);
+//	}
+//	
+//	protected PipedReader makeLowerOrderPipeForFirstPlugin(PropertiesHelper props) {
+//		
+//		PipedReader lowerOrderReader=null;
+//		try {
+//			// Create the PipedReaders for the first Plugin.  The rest of the plugins set manufacture using Chain of Responsibility pattern
+//			lowerOrderReader=new PipedReader(ITransformationPlugin.HIGH_ORDER_PIPE_BUF_SIZE_);
+//			// The end of the point that primes will be written so the first plugin can read them
+//			lowerOrderMainEndpointWriter=new PipedWriter(lowerOrderReader);
+//			
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		return(lowerOrderReader);
+//	}
 	
-	protected PipedReader makeLowerOrderPipeForFirstPlugin(PropertiesHelper props) {
-		
-		PipedReader lowerOrderReader=null;
-		try {
-			// Create the PipedReaders for the first Plugin.  The rest of the plugins set manufacture using Chain of Responsibility pattern
-			lowerOrderReader=new PipedReader(ITransformationPlugin.HIGH_ORDER_PIPE_BUF_SIZE_);
-			// The end of the point that primes will be written so the first plugin can read them
-			lowerOrderMainEndpointWriter=new PipedWriter(lowerOrderReader);
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return(lowerOrderReader);
-	}
-	
-	
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		LOGGER_.setLevel(Level.INFO);
+	// Just for tidy purposes....
+	protected PropertiesHelper setup(String args[]) {
 		PropertiesHelper props=PropertiesHelper.getInstance();
-		long sTime=System.currentTimeMillis();
+
 		
 		if( args.length != 1 ) {
 			System.err.println("Please add a command line parameter signifying the Number_of_Integers_in_Set_0.  Exiting. ");
@@ -151,24 +150,39 @@ public class Driver {
 				"Transforms to K=["+PropertiesHelper.getInstance().getMaxK() + "] " +
 				"Capping at ["+PropertiesHelper.getInstance().getFixedElementCountInResultSet()+"] (note: 0=no cap)" );
 
-
-		
-		// TODO Auto-generated method stub
-		Driver driver=new Driver();
 		
 		// Are we using stdin for K=1 (Set.1.xxx) or a File Override?
 		if(props.isUseFileInputStream() == true )
-			setK1Reader=driver.makeReaderFromFile(props);
+			setK1Reader=makeReaderFromFile(props);
 		else
-			setK1Reader=driver.makeReaderFromStdin();
+			setK1Reader=makeReaderFromStdin();
+		
+		return(props);
+	}
+	
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		LOGGER_.setLevel(Level.INFO);
+		long sTime=System.currentTimeMillis();
+		
+		// TODO Auto-generated method stub
+		Driver driver=new Driver();
+		PropertiesHelper props=driver.setup(args);
 		
 		// Make Pipes for the first plug (a special case)
-		PipedReader primesReaderForFirstPlugin=driver.makePrimesPipeForFirstPlugin(props);
-		PipedReader lowerOrderSetReaderForFirstPlugin=driver.makeLowerOrderPipeForFirstPlugin(props);
+//		PipedReader primesReaderForFirstPlugin=driver.makePrimesPipeForFirstPlugin(props);
+//		PipedReader lowerOrderSetReaderForFirstPlugin=driver.makeLowerOrderPipeForFirstPlugin(props);
+		// Make Queues Driver to share with the first plugin (a special case)
+		primesQueue=new ArrayBlockingQueue<Long>(PropertiesHelper.PRIMES_Q_BUF_SIZE_);
+		lowerOrderQueue=new ArrayBlockingQueue<Long>(PropertiesHelper.HIGH_Q_BUF_SIZE_);
+
 
 		// Make and wire up the Workers
-		ArrayList<ITransformationPlugin> plugins=driver.makeTransformationWorkers(props, primesReaderForFirstPlugin, lowerOrderSetReaderForFirstPlugin);
-
+		//ArrayList<ITransformationPlugin> plugins=driver.makeTransformationWorkers(props, primesReaderForFirstPlugin, lowerOrderSetReaderForFirstPlugin);
+		ArrayList<ITransformationPlugin> plugins=driver.makeTransformationWorkers(props, primesQueue, lowerOrderQueue);
+		
 		//Launch Threads...
 		for( int i=0; i < plugins.size(); i++ ) {
 			ITransformationPlugin currPlugin=plugins.get(i);
@@ -176,31 +190,105 @@ public class Driver {
 			t.setName("K="+new Integer(currPlugin.getSetK()).toString());
 			t.start();
 		}
+		
+		driver.processPrimesStream();
 
-		// Write stream of Primes to first plugin's Pipe
+		long eTime=System.currentTimeMillis();
+		LOGGER_.info("(Main Thread Time only) Total time taken was "+ (eTime-sTime) +" ms");
+	}
+	
+	// WRITING TO QUEUES
+	protected void putToPrimesOutQ(Long valueToPut) {
+		QueueUtils.putLongToQueue(primesQueue, valueToPut);
+	}
+	protected void putToOutboundProcessedSetQ(Long valueToPut) {
+		QueueUtils.putLongToQueue(lowerOrderQueue, valueToPut);
+	}
+	
+	protected void processPrimesStream() {
+		boolean done=false;
+		Long nextPrimeRead=getNextPrime();
+		
+		// When EOF is encountered on the input stream, getNextPrime() will catch that and return EOF_FOR_QUEUE_ instead
+		while(nextPrimeRead != PropertiesHelper.EOF_FOR_QUEUE_) {			
+			putToPrimesOutQ(nextPrimeRead);
+			putToOutboundProcessedSetQ(nextPrimeRead);
+			nextPrimeRead=getNextPrime();
+		}
+		
+		// Let 'em know we're done here
+		putToPrimesOutQ(PropertiesHelper.EOF_FOR_QUEUE_);
+		putToOutboundProcessedSetQ(PropertiesHelper.EOF_FOR_QUEUE_);
+	}
+		
+//		boolean done=false;
+//
+//		// Because of the InterruptedException, we need to separate the offers into separate try blocks.
+//		while( done != true ) {
+//			boolean offerResult=false;
+//			try {
+//				// Write value of Prime to first plugin's Pipe
+//				offerResult=primesQueue.offer(nextPrimeRead);
+//				while(offerResult == false) {
+//					Thread.sleep(PropertiesHelper.Q_OFFER_SLEEP_DURATION_);
+//					offerResult=primesQueue.offer(nextPrimeRead);
+//				}
+//				done = true;
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				//e.printStackTrace();   // This is ok - keep processing
+//			}
+//		}
+//		
+//		done=false;
+//		while( done != true ) {
+//			boolean offerResult=false;
+//			try {
+//				offerResult=lowerOrderQueue.offer(nextPrimeRead);
+//				while(offerResult == false) {
+//					Thread.sleep(PropertiesHelper.Q_OFFER_SLEEP_DURATION_);
+//					offerResult=lowerOrderQueue.offer(nextPrimeRead);
+//				}
+//				done=true;
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				//e.printStackTrace();  // This is ok - keep processing
+//			}
+//		}
+//	}
+	
+	protected static Long getNextPrime() {
+		StringBuffer resultSB=null;
 		try {
+			resultSB=new StringBuffer("");
+			
 			int charRead=setK1Reader.read();
-			while( charRead != EOF_ ) {
-				primesMainEndpointWriter.write(charRead);
-				lowerOrderMainEndpointWriter.write(charRead);
+			while( ((char)charRead != (char)EOF_INT_) && ((char)charRead != NEWLINE_CHAR_) ) {
+				resultSB.append((char)charRead);
 				charRead=setK1Reader.read();
+			}
+			if( ((char)charRead == (char)EOF_INT_) ) {
+				return(PropertiesHelper.EOF_FOR_QUEUE_);
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		long eTime=System.currentTimeMillis();
-		LOGGER_.info("Total time taken was "+ (eTime-sTime) +" ms");
+		return(new Long(resultSB.toString()));
 	}
 
-	protected static PipedWriter	primesMainEndpointWriter=null;
-	protected static PipedWriter	lowerOrderMainEndpointWriter=null;
+	protected static BlockingQueue<Long>	primesQueue=null;
+	protected static BlockingQueue<Long>	lowerOrderQueue=null;
+	
+//	protected static PipedWriter	primesMainEndpointWriter=null;
+//	protected static PipedWriter	lowerOrderMainEndpointWriter=null;
 	
 	// The stream of primes (e.g. K=1)
 	protected static	Reader setK1Reader=null; 
 
 	private static final String SET_1_FILENAME_PREFIX_="Set.1.";
-	private final static int		EOF_=-1;
+	private final static int		EOF_INT_=-1;
+	private final static char		NEWLINE_CHAR_='\n';
 	
 	final private static int SIZE_OF_INT_SET_ARGS_IDX_=0;
 	final private static Logger LOGGER_=Logger.getLogger("PrimeTransformationStream");  // project wide logger
