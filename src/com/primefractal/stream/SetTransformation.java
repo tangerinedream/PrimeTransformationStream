@@ -18,8 +18,7 @@ import com.primefractal.utils.IOUtils;
  */
 public class SetTransformation {
 	
-	protected void crunch(Reader primes, Reader lowerOrderSet, Writer higherOrderSet) {
-		System.out.println("TODO: Add File Element Count limit feature");	
+	protected void crunch(Reader primes, Reader lowerOrderSet, Writer higherOrderSet) {	
 		
 		// Get First Prime from Prime Reader
 		Long nextPrimeIndex=0L;

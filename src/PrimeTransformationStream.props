@@ -1,7 +1,7 @@
 ####### Prime Transformation Stream props
 ###
 # Max number of elements in resulting sets.  0 == No Limit
-FixedElementCountInResultSet=5000
+FixedElementCountInResultSet=0
 #
 #
 ###
