@@ -4,14 +4,13 @@
 package com.primefractal.stream;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.Reader;
+import java.io.Writer;
+
+import com.primefractal.main.PropertiesHelper;
+import com.primefractal.utils.IOUtils;
 
 /**
  * @author GMan
@@ -19,93 +18,98 @@ import java.io.OutputStream;
  */
 public class SetTransformation {
 	
-	protected void crunch(BufferedReader primes, BufferedReader valuesSet, BufferedWriter res) {
+	protected void crunch(Reader primes, Reader lowerOrderSet, Writer higherOrderSet) {
 		System.out.println("TODO: Add File Element Count limit feature");	
-		String nextPrimeIndexStr=null;
-		try {
-			nextPrimeIndexStr=primes.readLine();
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-			return;
-		}
-		long nextPrimeIndex=new Long(nextPrimeIndexStr).longValue();
 		
+		// Get First Prime from Prime Reader
+		Long nextPrimeIndex=0L;
+		nextPrimeIndex=IOUtils.getLongFromFile(primes);
+		
+		// Do the transformation, potentially limiting the results by elemCountLimitForSet
+		long elemCountLimitForSet=PropertiesHelper.getInstance().getFixedElementCountInResultSet();
+		long highOrderSetCounter=0L; // The number of elems promoted to the higher order set
+		Long currElemToProcess=0L;
+		long processCounter=1L;
 		boolean processComplete=false;
-		String nextProcessValueStr=null;
-
-		long processCounter=1;
 		while( processComplete == false ) {
 			//System.out.println("DEBUG:{"+nextPrimeIndex+", "+nextProcessValueStr+", "+processCounter+"}\n");
 			
-			try {
-				nextProcessValueStr=valuesSet.readLine();
-				if( nextProcessValueStr == null || (nextProcessValueStr.compareTo("") == 0) ) {
-					processComplete=true;
-					continue;
-				}
-				// Ensure the nextPrimeIndex to check, is >= processCounter
-				// Ensure the next Prime Index is > current counter.  Must use < and not <= otherwise search for index beyond stream
-				while( nextPrimeIndex < processCounter) {
-					nextPrimeIndexStr=primes.readLine();
-					nextPrimeIndex=new Long(nextPrimeIndexStr).longValue();
-				}
-				
-				// if the same, this value is a member of the next set
-				if( nextPrimeIndex == processCounter) {
-					//System.out.println("Writing:{"+nextPrimeIndex+", "+nextProcessValueStr+", "+processCounter+"}\n");
-					res.write(nextProcessValueStr);
-					res.write("\n");
-				}
-				
-				// Move the chains for the set we are processing
-				processCounter++;
-				
-			} catch (NumberFormatException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			// Get next element to process from Lower Order Set
+			currElemToProcess=IOUtils.getLongFromFile(lowerOrderSet);
+			if( currElemToProcess == IOUtils.EOF_LONG_ ) {
+				processComplete=true;
+				continue;
 			}
+			// Ensure the nextPrimeIndex to check, is >= processCounter
+			// Ensure the next Prime Index is > current counter.  Must use < and not <= otherwise search for index beyond stream
+			while( nextPrimeIndex < processCounter) {
+				nextPrimeIndex=IOUtils.getLongFromFile(primes);
+			}
+		
+			// if the same, this value is a member of the next set
+			if( nextPrimeIndex == processCounter) {
+				//System.out.println("Writing:{"+nextPrimeIndex+", "+nextProcessValueStr+", "+processCounter+"}\n");
+				String elemToPromoteToHigherOrderSet=new String(currElemToProcess.toString() + IOUtils.NEWLINE_STR_);
+				try {
+					higherOrderSet.write(elemToPromoteToHigherOrderSet);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				highOrderSetCounter++;
+			}
+			
+			// if maxElemInResSetRequested == 0, we don't cap the output and therefore don't need to check
+			if( (elemCountLimitForSet != 0L ) && (highOrderSetCounter >= elemCountLimitForSet) ) {
+				// There may be more, but the requester has asked that we only capture the first maxElemInResSetRequested in our result files
+				// Note: Don't flush the primesOut Writer because he still has plenty of elements to transfer !
+				processComplete=true;
+				try {
+					higherOrderSet.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}	
+			}
+			
+			// Move the chains for the set we are processing
+			processCounter++;
 		}
 	}	
 	
+	
 	public static void main(String args[]) {
+		
+		// Process args: SetSize LowerK HigherK
 		String reqSetSize=args[0];
+		PropertiesHelper.getInstance().setSizeOfIntegerSet(new Long(reqSetSize).longValue());
 		String kLowerOrderSetStr=args[1];
+		long kLowerOrderSetNbr=new Long(kLowerOrderSetStr).longValue();
 		String kHigherOrderSetStr=args[2];
+		long kHigherOrderSetNbr=new Long(kHigherOrderSetStr).longValue();
+		
+		// Are we using stdin for K=1 (Set.1.xxx) or a File Override?
+		Reader primesReader=null;
+		if(PropertiesHelper.getInstance().isUseFileInputStream() == true )
+			primesReader=IOUtils.makeSetOneReaderWithDefaultFilename();
+		else
+			primesReader=IOUtils.makeSetOneReaderFromStdin();
+
+		// Make Reader for LowerOrderSet
+		Reader lowerOrderSet=IOUtils.makeInputSetReaderWithDefaultFilename(kLowerOrderSetNbr);
+		
+		// Make Writer for HigherOrderSet
+		Writer higherOrderSet=IOUtils.makeProcessedFileWriterWithDefaultFilename(kHigherOrderSetNbr);
+		
+		// Perform the Transformation
+		SetTransformation st=new SetTransformation();
+		st.crunch(primesReader, lowerOrderSet, higherOrderSet);
 		
 		try {
-			BufferedReader primesReader=new BufferedReader(new InputStreamReader(System.in));  // System.in is an InputStream
-			
-			// In the case of K=2, Why not fork the InputStream by reading a char, and writing to two different WHAT charArray ? 
-			
-			FileReader fReader=new FileReader("Set."+kLowerOrderSetStr+"."+reqSetSize);
-			BufferedReader valuesReader=new BufferedReader(fReader);
-			
-			FileWriter fWriter=new FileWriter("Set."+kHigherOrderSetStr+"."+reqSetSize);
-			BufferedWriter resultsWriter=new BufferedWriter(fWriter);
-			System.out.println("TODO: Convert files to gzipped.");//see http://docs.oracle.com/javase/7/docs/api/java/io/OutputStreamWriter.html
-			
-			SetTransformation st=new SetTransformation();
-			st.crunch(primesReader, valuesReader, resultsWriter);
-			
-			try {
-				valuesReader.close();
-				fReader.close();
-				resultsWriter.close();
-				fWriter.close();
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-			
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
+			primesReader.close();
+			lowerOrderSet.close();
+			higherOrderSet.close();
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

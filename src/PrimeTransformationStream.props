@@ -1,11 +1,19 @@
-##
+####### Prime Transformation Stream props
+###
+# Max number of elements in resulting sets.  0 == No Limit
+FixedElementCountInResultSet=5000
 #
-FixedElementCountInResultSet=0
 #
-##
+###
 # Transformations
-#
 MaxK=2
+#
+#
+###
+# Prefix name of both the input and output filenames 
+FamilyName=Set
+
+
 ##
 # Override stdin with a gzipped file
 UseFileInputStream=true
@@ -13,10 +21,10 @@ UseFileInputStream=true
 ##
 # File Naming
 #
-FamilyName=TestFamily
+FamilyName=Set
 #
 ##
 # No Longer in Use
 #
 #MaxPrimesToRealize=0
-#SizeOfIntegerSet=1000
+#SizeOfIntegerSet=1000  This is passed in as a command line argument and stored in PropertiesHelper, for better integration with shell scripting

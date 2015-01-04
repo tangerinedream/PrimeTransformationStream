@@ -3,11 +3,7 @@
  */
 package com.primefractal.main;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -15,10 +11,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.zip.GZIPInputStream;
-
 import com.primefractal.stream.ITransformationPlugin;
 import com.primefractal.stream.TransformationWorker;
+import com.primefractal.utils.IOUtils;
 import com.primefractal.utils.QueueUtils;
 
 /**
@@ -69,35 +64,6 @@ public class Driver {
 		return(plugins);
 	}
 	
-	public Reader makeReaderFromFile(PropertiesHelper props) {
-		String filename=SET_1_FILENAME_PREFIX_+props.getSizeOfIntegerSet()+".gz";
-		
-		// Convert to Reader
-		InputStreamReader isr=null;
-		try {
-			FileInputStream fis=new FileInputStream(filename);
-			// Buffer for performance 
-			BufferedInputStream bis=new BufferedInputStream(fis);
-			// Gunzip
-			GZIPInputStream gis=new GZIPInputStream(bis);
-			isr = new InputStreamReader(gis);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return(isr);
-	}
-	
-	public Reader makeReaderFromStdin() {
-		// System.in is an InputStream
-		BufferedReader stdinReader=new BufferedReader(new InputStreamReader(System.in)); 
-		return(stdinReader);
-	}
-	
 	
 	// Just for tidy purposes....
 	protected PropertiesHelper setup(String args[]) {
@@ -118,9 +84,9 @@ public class Driver {
 		
 		// Are we using stdin for K=1 (Set.1.xxx) or a File Override?
 		if(props.isUseFileInputStream() == true )
-			setK1Reader=makeReaderFromFile(props);
+			setK1Reader=IOUtils.makeSetOneReaderWithDefaultFilename();
 		else
-			setK1Reader=makeReaderFromStdin();
+			setK1Reader=IOUtils.makeSetOneReaderFromStdin();
 		
 		return(props);
 	}
@@ -137,8 +103,8 @@ public class Driver {
 		PropertiesHelper props=driver.setup(args);
 		
 		// Make Queues Driver to share with the first plugin (a special case)
-		primesQueue=new ArrayBlockingQueue<Long>(PropertiesHelper.PRIMES_Q_BUF_SIZE_);
-		lowerOrderQueue=new ArrayBlockingQueue<Long>(PropertiesHelper.HIGH_Q_BUF_SIZE_);
+		primesQueue=new ArrayBlockingQueue<Long>(QueueUtils.PRIMES_Q_BUF_SIZE_);
+		lowerOrderQueue=new ArrayBlockingQueue<Long>(QueueUtils.HIGH_Q_BUF_SIZE_);
 
 
 		// Make and wire up the Workers
@@ -170,10 +136,10 @@ public class Driver {
 	
 	protected void processPrimesStream() {
 		boolean done=false;
-		Long nextPrimeRead=getNextPrime();
+		Long nextPrimeRead=IOUtils.getLongFromFile(setK1Reader);
 		
 		// When EOF is encountered on the input stream, getNextPrime() will catch that and return EOF_FOR_QUEUE_ instead
-		while(nextPrimeRead != PropertiesHelper.EOF_FOR_QUEUE_) {
+		while(nextPrimeRead != QueueUtils.EOF_FOR_QUEUE_) {
 			BlockingQueue<Long> copyPrimesQ=primesQueue;
 			BlockingQueue<Long> copyOutboundQ=lowerOrderQueue;
 			
@@ -182,34 +148,34 @@ public class Driver {
 			putToOutboundProcessedSetQ(nextPrimeReadCopy);
 			putToPrimesOutQ(nextPrimeRead);
 			Thread.yield();
-			nextPrimeRead=getNextPrime();
+			nextPrimeRead=IOUtils.getLongFromFile(setK1Reader);
 		}
 		
 		// Let 'em know we're done here
-		putToPrimesOutQ(PropertiesHelper.EOF_FOR_QUEUE_);
-		putToOutboundProcessedSetQ(PropertiesHelper.EOF_FOR_QUEUE_);
+		putToPrimesOutQ(QueueUtils.EOF_FOR_QUEUE_);
+		putToOutboundProcessedSetQ(QueueUtils.EOF_FOR_QUEUE_);
 	}
 		
 	
-	protected static Long getNextPrime() {
-		StringBuffer resultSB=null;
-		try {
-			resultSB=new StringBuffer("");
-			
-			int charRead=setK1Reader.read();
-			while( ((char)charRead != (char)EOF_INT_) && ((char)charRead != NEWLINE_CHAR_) ) {
-				resultSB.append((char)charRead);
-				charRead=setK1Reader.read();
-			}
-			if( ((char)charRead == (char)EOF_INT_) ) {
-				return(PropertiesHelper.EOF_FOR_QUEUE_);
-			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return(new Long(resultSB.toString()));
-	}
+//	protected static Long getNextPrime() {
+//		StringBuffer resultSB=null;
+//		try {
+//			resultSB=new StringBuffer("");
+//			
+//			int charRead=setK1Reader.read();
+//			while( ((char)charRead != (char)EOF_INT_) && ((char)charRead != NEWLINE_CHAR_) ) {
+//				resultSB.append((char)charRead);
+//				charRead=setK1Reader.read();
+//			}
+//			if( ((char)charRead == (char)EOF_INT_) ) {
+//				return(PropertiesHelper.EOF_FOR_QUEUE_);
+//			}
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		return(new Long(resultSB.toString()));
+//	}
 
 	protected static BlockingQueue<Long>	primesQueue=null;
 	protected static BlockingQueue<Long>	lowerOrderQueue=null;

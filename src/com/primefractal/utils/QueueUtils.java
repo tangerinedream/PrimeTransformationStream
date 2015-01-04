@@ -23,7 +23,7 @@ public class QueueUtils {
 				nextValue=queue.poll();
 				while(nextValue == null) {
 					//nextValue=queue.poll(PropertiesHelper.POLL_DURATION_, TimeUnit.MILLISECONDS);
-					Thread.sleep(PropertiesHelper.Q_POLL_SLEEP_DURATION_);
+					Thread.sleep(Q_POLL_SLEEP_DURATION_);
 					nextValue=queue.poll();
 					
 				}
@@ -45,7 +45,7 @@ public class QueueUtils {
 			try {
 				offerResult=queue.offer(valueToPut);
 				while(offerResult == false) {
-					Thread.sleep(PropertiesHelper.Q_OFFER_SLEEP_DURATION_);
+					Thread.sleep(Q_OFFER_SLEEP_DURATION_);
 					offerResult=queue.offer(valueToPut);
 				}
 				done=true;
@@ -56,5 +56,12 @@ public class QueueUtils {
 		}
 			
 	}
-
+	
+	public final static int		PRIMES_Q_BUF_SIZE_	=1000000;	// 10^6
+	//public final static int		PRIMES_Q_BUF_SIZE_	=10000000;	// 10^7
+	//public final static int		PRIMES_Q_BUF_SIZE_	=3000000;	// 3M
+	public final static int		HIGH_Q_BUF_SIZE_	=1000000;	// 10^6
+	public final static long		Q_OFFER_SLEEP_DURATION_ = 50L; // millis
+	public final static long		Q_POLL_SLEEP_DURATION_ 	= 50L; // millis
+	public final static Long 	EOF_FOR_QUEUE_=new Long(-1);
 }

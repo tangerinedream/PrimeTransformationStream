@@ -3,17 +3,13 @@
  */
 package com.primefractal.stream;
 
-import java.io.BufferedOutputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.logging.Logger;
-import java.util.zip.GZIPOutputStream;
-
 import com.primefractal.main.PropertiesHelper;
+import com.primefractal.utils.IOUtils;
 import com.primefractal.utils.QueueUtils;
 
 /**
@@ -26,7 +22,7 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 		super();
 		setSetK(K);
 		setReqSetSize(reqSetSize2);
-		makeOutFile();
+		IOUtils.makeProcessedFileWriterWithDefaultFilename(getSetK());
 	}
 	
 	public void wireUp(ITransformationPlugin nextPluginInChain) {
@@ -41,12 +37,12 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 		
 
 		// Make the Primes Output Q
-		primesOutQ=new ArrayBlockingQueue<Long>(PropertiesHelper.PRIMES_Q_BUF_SIZE_);
+		primesOutQ=new ArrayBlockingQueue<Long>(QueueUtils.PRIMES_Q_BUF_SIZE_);
 		// share it with the next plugin
 		nextPluginInChain.setPrimesInQ(primesOutQ);
 		
 		// Make the Higher Order Set Queue
-		outboundProcessedSetQ=new ArrayBlockingQueue<Long>(PropertiesHelper.HIGH_Q_BUF_SIZE_);
+		outboundProcessedSetQ=new ArrayBlockingQueue<Long>(QueueUtils.HIGH_Q_BUF_SIZE_);
 		// Share it with next plugin
 		nextPluginInChain.setInboundSetToProcessQ(outboundProcessedSetQ);
 	}
@@ -67,13 +63,19 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 		// Read first Prime from Prime Reader
 		nextPrimeIndexLong=getFromPrimesInQ();
 		//debugCntPrimesRead++;
-		if( nextPrimeIndexLong == PropertiesHelper.EOF_FOR_QUEUE_ ) {
+		if( nextPrimeIndexLong == QueueUtils.EOF_FOR_QUEUE_ ) {
 			// This should never occur.  End of file encountered on first element of the Ordered Set of Primes.
 			if( thisIsLastPluginInChain == false ) {
-				putToPrimesOutQ(PropertiesHelper.EOF_FOR_QUEUE_);
-				putToOutboundProcessedSetQ(PropertiesHelper.EOF_FOR_QUEUE_);
+				putToPrimesOutQ(QueueUtils.EOF_FOR_QUEUE_);
+				putToOutboundProcessedSetQ(QueueUtils.EOF_FOR_QUEUE_);
 			}
-			closeResultsFile();
+			//closeResultsFile();
+			try {
+				resultsFile.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			return;
 		}
 
@@ -94,12 +96,18 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 //			debugCntInSetElemRead++;
 //			System.out.println("DEBUG: NbrPrimesRead="+debugCntPrimesRead+" Nbr InSetElemsRead="+debugCntInSetElemRead);
 //			System.out.println("DEBUG: PrimesQ Capacity="+primesInQ.remainingCapacity()+" SetInQ capacity="+inboundSetToProcessQ.remainingCapacity());
-			if( lowOrderSetElemLong == PropertiesHelper.EOF_FOR_QUEUE_ ) {
+			if( lowOrderSetElemLong == QueueUtils.EOF_FOR_QUEUE_ ) {
 				// Let the consumer of the stream know the end of file has been reached
 				if( thisIsLastPluginInChain == false ) {
-					putToOutboundProcessedSetQ(PropertiesHelper.EOF_FOR_QUEUE_);
+					putToOutboundProcessedSetQ(QueueUtils.EOF_FOR_QUEUE_);
 				}
-				closeResultsFile();
+				//closeResultsFile();
+				try {
+					resultsFile.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				// Don't flush the primesOut Writer because he still has plenty of elements to transfer !
 				processComplete=true;
 				continue;
@@ -136,9 +144,14 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 				// if maxElemInResSetRequested == 0, we don't cap the output and therefore don't need to check
 				if( (maxElemInResSetRequested != 0L ) && (highOrderSetCounter >= maxElemInResSetRequested) ) {
 					// There may be more, but the requester has asked that we only capture the first maxElemInResSetRequested in our result files
-					closeResultsFile();
-					// Don't flush the primesOut Writer because he still has plenty of elements to transfer !
+					// Note: Don't flush the primesOut Writer because he still has plenty of elements to transfer !
 					processComplete=true;
+					try {
+						resultsFile.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 			}
 
@@ -150,11 +163,11 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 		} else {
 			// We need to read the rest of the Primes Q and push entries downstream, including EOF
 			nextPrimeIndexLong=getFromPrimesInQ();
-			while( nextPrimeIndexLong != PropertiesHelper.EOF_FOR_QUEUE_ ) {
+			while( nextPrimeIndexLong != QueueUtils.EOF_FOR_QUEUE_ ) {
 				putToPrimesOutQ(nextPrimeIndexLong);
 				nextPrimeIndexLong=getFromPrimesInQ();
 			}
-			putToPrimesOutQ(PropertiesHelper.EOF_FOR_QUEUE_);
+			putToPrimesOutQ(QueueUtils.EOF_FOR_QUEUE_);
 		}
 	}
 		
@@ -184,38 +197,38 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 	/**
 	 * 
 	 */
-	private void makeOutFile() {
-		String filename=SET_PREFIX_+DELIM_+getSetK()+DELIM_+getReqSetSize()+".gz";
-				
-		try {
-			// 2. Open the FileOutputStream
-			fos=new FileOutputStream(filename);
-			bos=new BufferedOutputStream(fos);
-			
-			// 3. Wrap fos into GZIP Filter Output Stream
-			gOut=new GZIPOutputStream(bos);
-			
-			// 4. Wrap gOut stream with BitOutputStream so we can stream booleans
-			resultsFile=new OutputStreamWriter(gOut);
-			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-	}
-	private void closeResultsFile() {
-		try {
-			resultsFile.close();
-			gOut.close();
-			bos.close();
-			fos.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+//	private void makeOutFile() {
+//		String filename=SET_PREFIX_+DELIM_+getSetK()+DELIM_+getReqSetSize()+".gz";
+//				
+//		try {
+//			// 2. Open the FileOutputStream
+//			fos=new FileOutputStream(filename);
+//			bos=new BufferedOutputStream(fos);
+//			
+//			// 3. Wrap fos into GZIP Filter Output Stream
+//			gOut=new GZIPOutputStream(bos);
+//			
+//			// 4. Wrap gOut stream with BitOutputStream so we can stream booleans
+//			resultsFile=new OutputStreamWriter(gOut);
+//			
+//		} catch (FileNotFoundException e) {
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//		
+//	}
+//	private void closeResultsFile() {
+//		try {
+//			resultsFile.close();
+//			gOut.close();
+//			bos.close();
+//			fos.close();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//	}
 	
 	// READING FROM QUEUES
 	protected Long getFromPrimesInQ() {
@@ -273,9 +286,9 @@ public class TransformationWorker implements Runnable, ITransformationPlugin {
 	protected 	long					reqSetSize;
 	protected	boolean					thisIsLastPluginInChain=false;
 	
-	private 	FileOutputStream		fos;
-	private 	BufferedOutputStream  	bos;
-	private 	GZIPOutputStream		gOut;
+//	private 	FileOutputStream		fos;
+//	private 	BufferedOutputStream  	bos;
+//	private 	GZIPOutputStream		gOut;
 	private 	OutputStreamWriter		resultsFile;
 	
 	private final static String 	SET_PREFIX_="Set";
