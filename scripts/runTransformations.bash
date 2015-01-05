@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export JVM_MAX_HEAP="10G"
+
 export TRANSFORMATION_CNT="15" 
 #export SET_K_1_SIZE="$((10**9))"
 export SET_K_1_SIZE=50000000
@@ -24,17 +26,15 @@ do
 	echo "Performing Transformation for Set K=$K_LOW_ORDER_SET to Set K=$K_HIGH_ORDER_SET"
 ###
 # Use this command when you want to stream in 
-#	primesieve ${SET_K_1_SIZE} --print | java com.primefractal.stream.SetTransformation ${SET_K_1_SIZE} ${K_LOW_ORDER_SET} $((K_HIGH_ORDER_SET))
+#	primesieve ${SET_K_1_SIZE} --print | java -Xmx${JVM_MAX_HEAP} com.primefractal.stream.SetTransformation ${SET_K_1_SIZE} ${K_LOW_ORDER_SET} $((K_HIGH_ORDER_SET))
 ###
 
 ###
 # Use this command when you have configured in PrimeTransformationStream.props to "UseFileInputStream=true"
 #     in this case, it will use the generated file for Set 1
-	time java com.primefractal.stream.SetTransformation ${SET_K_1_SIZE} ${K_LOW_ORDER_SET} $((K_HIGH_ORDER_SET))
+	time java -Xmx${JVM_MAX_HEAP} com.primefractal.stream.SetTransformation ${SET_K_1_SIZE} ${K_LOW_ORDER_SET} $((K_HIGH_ORDER_SET))
 #
 
 done
 
-
-
-
+echo "NOTE: If you ran a truncated resutls set, now is a good time to run 'primesieve <truncated set size> --print | gzip > Set.1.xxx.gz' to overwrite the potentially huge original Set K=1"
