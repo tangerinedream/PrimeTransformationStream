@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export JVM_MAX_HEAP="10G"
+export JVM_MAX_HEAP="5G"
 
 export TRANSFORMATION_CNT="15" 
 #export SET_K_1_SIZE="$((10**9))"
@@ -13,8 +13,11 @@ echo SET_1_NAME = $DEFAULT_SET_1_NAME
 
 # Create the K=1 Set if it does not exist
 if [ ! -f ${DEFAULT_SET_1_NAME} ]; then
-	echo "Set 1 does not exist, creating"
+	echo "`date` Set 1 does not exist, creating"
 	primesieve ${SET_K_1_SIZE} --print | gzip > ${DEFAULT_SET_1_NAME}
+	echo "`date` Set 1 generated and stored""
+else
+	echo "Set 1 exist, bypassing creation"
 fi
 
 # Perform the Transformations
@@ -23,6 +26,7 @@ for i in $(seq 1 $LOOP_END)
 do
 	export K_LOW_ORDER_SET=$i
 	export K_HIGH_ORDER_SET=$((i+1))
+	echo `date`
 	echo "Performing Transformation for Set K=$K_LOW_ORDER_SET to Set K=$K_HIGH_ORDER_SET"
 ###
 # Use this command when you want to stream in 
