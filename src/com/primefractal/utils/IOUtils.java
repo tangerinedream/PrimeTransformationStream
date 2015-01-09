@@ -100,10 +100,8 @@ public class IOUtils {
 			GZIPInputStream gis=new GZIPInputStream(bis);
 			isr = new InputStreamReader(gis);
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		

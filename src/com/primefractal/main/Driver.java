@@ -3,8 +3,6 @@
  */
 package com.primefractal.main;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -98,7 +96,6 @@ public class Driver {
 		LOGGER_.setLevel(Level.INFO);
 		long sTime=System.currentTimeMillis();
 		
-		// TODO Auto-generated method stub
 		Driver driver=new Driver();
 		PropertiesHelper props=driver.setup(args);
 		
@@ -114,7 +111,6 @@ public class Driver {
 		for( int i=0; i < plugins.size(); i++ ) {
 			ITransformationPlugin currPlugin=plugins.get(i);
 			Thread t=new Thread((Runnable) currPlugin);
-			//t.setPriority(Thread.NORM_PRIORITY+1);
 			t.setName("K="+new Integer(currPlugin.getSetK()).toString());
 			t.start();
 		}
@@ -135,17 +131,14 @@ public class Driver {
 	}
 	
 	protected void processPrimesStream() {
-		boolean done=false;
 		Long nextPrimeRead=IOUtils.getLongFromFile(setK1Reader);
 		
 		// When EOF is encountered on the input stream, getNextPrime() will catch that and return EOF_FOR_QUEUE_ instead
 		while(nextPrimeRead != QueueUtils.EOF_FOR_QUEUE_) {
-			BlockingQueue<Long> copyPrimesQ=primesQueue;
-			BlockingQueue<Long> copyOutboundQ=lowerOrderQueue;
-			
-			// For some reason, the value isn't getting copied into the queue
-			Long nextPrimeReadCopy=new Long(nextPrimeRead);
-			putToOutboundProcessedSetQ(nextPrimeReadCopy);
+			//BlockingQueue<Long> copyPrimesQ=primesQueue;        // Used for eclipse debugging purposes only
+			//BlockingQueue<Long> copyOutboundQ=lowerOrderQueue;  // Used for eclipse debugging purposes only
+
+			putToOutboundProcessedSetQ(nextPrimeRead);
 			putToPrimesOutQ(nextPrimeRead);
 			Thread.yield();
 			nextPrimeRead=IOUtils.getLongFromFile(setK1Reader);
@@ -157,36 +150,12 @@ public class Driver {
 	}
 		
 	
-//	protected static Long getNextPrime() {
-//		StringBuffer resultSB=null;
-//		try {
-//			resultSB=new StringBuffer("");
-//			
-//			int charRead=setK1Reader.read();
-//			while( ((char)charRead != (char)EOF_INT_) && ((char)charRead != NEWLINE_CHAR_) ) {
-//				resultSB.append((char)charRead);
-//				charRead=setK1Reader.read();
-//			}
-//			if( ((char)charRead == (char)EOF_INT_) ) {
-//				return(PropertiesHelper.EOF_FOR_QUEUE_);
-//			}
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		return(new Long(resultSB.toString()));
-//	}
-
 	protected static BlockingQueue<Long>	primesQueue=null;
 	protected static BlockingQueue<Long>	lowerOrderQueue=null;
 
 	
 	// The stream of primes (e.g. K=1)
 	protected static	Reader setK1Reader=null; 
-
-	private static final String 	SET_1_FILENAME_PREFIX_="Set.1.";
-	private final static int		EOF_INT_=-1;
-	private final static char		NEWLINE_CHAR_='\n';
 	
 	final private static int 	SIZE_OF_INT_SET_ARGS_IDX_=0;
 	final private static Logger LOGGER_=Logger.getLogger("PrimeTransformationStream");  // project wide logger
