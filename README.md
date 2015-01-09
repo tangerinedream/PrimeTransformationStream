@@ -12,7 +12,7 @@ Partially completed.  Transformation is working using input files for the two in
 Full stream input development is in progress.
 
 # Usage
-nohup java com.primefractal.stream.SetTransformation <number of elements in set to be used to generate primes (e.g. 10^^12)> &
+nohup primesieve <number of elements (e.g. 10^^12)> | java com.primefractal.stream.SetTransformation <number of elements (e.g. 10^^12)> &
 
 Ensure the configuration file PrimeTransformationStream.props is accessible via CLASSPATH
 
@@ -21,3 +21,6 @@ Have a look into the scripts folder for some basic scripts
 run makeJar.bash from the parent directory of src
 export CLASSPATH=<path to jar file>
 Be sure to edit the PrimeTransformationStream.props
+
+# Dependencies
+Any stream generator of prime numbers can be used, provided it outputs one prime number followed by a newline.  Here, I used primesieve which is available at Primesieve.org.  Building primesieve from source on AWS with a "trusty" AMI was flawless and no modifications were required.  See the documentatation on their website.
